@@ -1,0 +1,9 @@
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - bcftools=1.15
+  - openjdk=11.0.15
+  - snpeff=5.1
+  - SnpSift=5.1
+  - vt=2015.11.10
