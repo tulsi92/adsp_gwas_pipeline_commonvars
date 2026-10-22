@@ -29,8 +29,8 @@ plink \
 ```
 
 Each module contains:
-* A detailed `README.md`
 * Snakemake workflow (`Snakefile`)
+* Required scripts for Snakemake rules
 * Required software environments (container and/or conda)
 * Configuration file
 
