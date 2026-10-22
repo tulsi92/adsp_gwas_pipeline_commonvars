@@ -1,0 +1,71 @@
+import os
+import glob
+import yaml
+from ast import literal_eval
+from snakemake.utils import Paramspace
+import pandas as pd
+import numpy as np
+
+config_tab = pd.read_table("config_files/config.tsv")
+listcols = ['IMPACT_FILTER', 'FILTER_NAME']
+config_tab = config_tab.replace({np.nan: None})
+
+def getconf(wc, col, delist=True):
+    col_matches = [v == config_tab[k.upper()] for k, v in wc.items()
+                   if k.upper() in config_tab.columns]
+    col_match_array = np.array(col_matches, dtype=bool)
+    all_cols_match = np.logical_and.reduce(col_match_array)
+    matching_rows = config_tab[all_cols_match]
+    if matching_rows.shape[0] != 1:
+        print(f"Wildcard: {wc}")
+        print(f"Matching rows:\n{matching_rows}")
+    assert matching_rows.shape[0] != 0, "No matching config row for wildcards"
+    assert matching_rows.shape[0] == 1, "More than 1 matching config row for wildcards"
+    retval_ = matching_rows.iloc[0][col]
+    if col in listcols and retval_:
+        retval_ = retval_.strip('[]').split(',')
+    return retval_
+
+CHROMOSOMES = range(1, 23)
+
+wildcard_constraints:
+    chr = "\d+"
+
+# snakemake --rulegraph | dot -Tpdf > dag.pdf
+# import ipdb; ipdb.set_trace()
+
+localrules: main
+
+rule main:
+    input:
+        expand(
+           "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.filtered.gds",
+           zip,
+           basename = config_tab.BASENAME.values.tolist(),
+           strata = config_tab.STRATA.values.tolist(),
+           outcome = config_tab.OUTCOME.values.tolist(),
+           refp_super_pops = config_tab.REFP_SUPER_POPS.values.tolist(),
+           filter_name = config_tab.FILTER_NAME.values.tolist())
+
+####################################
+## Filter variants by annotations ##
+####################################
+## Common variants: MAF>1%
+## Rare exonic variants: MAF<1% and protein coding
+rule filter_variants_by_annot:
+    input:
+        gds = lambda wc: getconf(wc, 'ADSP_GENO_GDS'),
+        variant_annot = lambda wc: getconf(wc, 'ADSP_VARIANT_ANNOT')
+    output:
+        gds = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.filtered.gds"
+    resources:
+        walltime = "100:00",
+        mem_mb = 40000
+    threads: 10
+    container: "/sc/arion/projects/load/users/patelt16/resources/containers/04192023-github-ci_analysis.sif"
+    params:
+        snp_filter = lambda wc: getconf(wc, 'SNP_FILTER'),
+        impact_filter = lambda wc: getconf(wc, 'IMPACT_FILTER'),
+        snp_maf = lambda wc: getconf(wc, 'SNP_MAF'),
+        snp_type = lambda wc: getconf(wc, 'SNP_TYPE')
+    script: "scripts/Snakefile.filter_variants_by_annot.R"
