@@ -12,12 +12,12 @@ Each analysis module is self-contained. Read the folder-specific README.md first
 | `qc_and_pca/` | ADSP genotype QC	| Filtered genotype data for all common variants |	Post-QC genotype data and PCs |
 
 ### Prepare final dataset for downstream analysis
-For downstream analyses, we remove ADNI samples and retain only AD cases using `plink` as shown below:
+Once the steps are complete, we remove ADNI samples and retain only AD cases for downstream analyses as shown below:
 
 ```
 module load plink
 
-ADSP_CC_PLINK="adsp.r4.wgs"
+ADSP_CC_PLINK="adsp.r4.wgs_cc.{date}"
 SAMPLES_KEEP="adsp_cases_excl_adni_all.10236.pheno.tsv"
 PLINK_OUT="adsp.r4.wgs.cases_excl_adni"
 
