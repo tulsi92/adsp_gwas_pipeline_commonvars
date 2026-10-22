@@ -1,6 +1,6 @@
-# ADSP R4 GWAS Pipeline (Common variants)
+# ADSP R4 WGS Processing Pipeline
 
-This repository contains the code required to perform genome-wide association studies (GWAS) using Alzheimer's Disease Sequencing Project (ADSP) Release 4 36k WGS multiallelic data. The pipeline is organized into independent analysis modules covering genotype preprocessing and downstream association analyses. GCAD processed ADSP gVCF files were downloaded from the NIAGADS AWS.
+This repository contains the code required to perform genome-wide association studies (GWAS) using Alzheimer's Disease Sequencing Project (ADSP) Release 4 WGS multiallelic data. The pipeline is organized into independent analysis modules covering genotype preprocessing and downstream association analyses. GCAD processed ADSP gVCF files were downloaded from the NIAGADS AWS.
 
 ### Repository structure
 Each analysis module is self-contained. Read the folder-specific README.md first to follow the documented execution order and required inputs.
@@ -10,13 +10,29 @@ Each analysis module is self-contained. Read the folder-specific README.md first
 | `phen/` | Phenotype processing	| ADSP phenotype files and documentation |	Analysis-ready phenotype and covariates files |
 | `vcf_to_gds_multi/` | ADSP genotype preprocessing and GCAD QC	| Raw ADSP genotype data, phenotype files, GCAD filtering recommendations |	Filtered genotype data, QC metrics, variant annotation files |
 | `qc_and_pca/` | ADSP genotype QC	| Filtered genotype data for all common variants |	Post-QC genotype data and PCs |
-| `slope_prs/` |	x	|	x | x |
+
+### Prepare final dataset for downstream analysis
+For downstream analyses, we remove ADNI samples and retain only AD cases using `plink` as shown below:
+
+```
+module load plink
+
+ADSP_CC_PLINK="adsp.r4.wgs"
+SAMPLES_KEEP="adsp_cases_excl_adni_all.10236.pheno.tsv"
+PLINK_OUT="adsp.r4.wgs.cases_excl_adni"
+
+plink \
+  --bfile "${ADSP_CC_PLINK}" \
+  --keep "${SAMPLES_KEEP}" \
+  --make-bed \
+  --out "${PLINK_OUT}"
+```
 
 Each module contains:
 * A detailed `README.md`
 * Snakemake workflow (`Snakefile`)
 * Required software environments (container and/or conda)
-* Analysis-specific configuration options
+* Configuration file
 
 ### Data
 ADSP genotype data and phenotype files are **not** included in this repository due to data access restrictions. Users must have authorized access to the required ADSP datasets and associated phenotype/covariate files.
