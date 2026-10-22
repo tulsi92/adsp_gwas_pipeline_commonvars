@@ -182,74 +182,29 @@ bcftools view -R {input.variant_filterlist} {input.vcf} -Oz -o {output} --thread
 ###############
 ## BIALLELIC ##
 ###############
-## Determine which params to use depending on adsp version
-def process_chr_vcf_cohort_rule(wc):
-    if wc['basename'] == "adsp.r2.wes" or wc['basename'] == "adsp.r3.wgs":
-        return "bcftools annotate -x ^FORMAT/GT | \\"
-    else:
-        return ""
-
-## Determine which filters to use depending on adsp version
-def process_chr_vcf_wes_filters(wc):
-    if wc['basename'] == "adsp.r2.wes":
-        return """awk '{{ \\
-                gsub(/ADSP_Discovery-Nimblegen_VCRome_V2\.1/, "ADSP_Discovery_Nimblegen_VCRome_V2_1"); \\
-                gsub(/ADSP_Discovery-Illumina_Rapid_Capture_Exome_\(ICE\)_kit/, "ADSP_Discovery_Illumina_Rapid_Capture_Exome__ICE__kit"); \\
-                gsub(/ADGC_AA-Agilent_WES_v6_capture_region/, "ADGC_AA_Agilent_WES_v6_capture_region"); \\
-                gsub(/FASe_Families-Agilent_WES_v5_capture_region/, "FASe_Families_Agilent_WES_v5_capture_region"); \\
-                gsub(/FASe_Families-Nimblegen_VCRome_sequencing_w-Custom_Spike-In_Baits/, "FASe_Families_Nimblegen_VCRome_sequencing_w_Custom_Spike_In_Baits"); \\
-                gsub(/FASe_Families-Nimblegen_VCRome_V2\.1/, "FASe_Families_Nimblegen_VCRome_V2_1"); \\
-                gsub(/Brkanac_Families-Roche_SeqCap_EZ_Exome_Probes_v2\.0_Target_Enrichment_Probes/, "Brkanac_Families_Roche_SeqCap_EZ_Exome_Probes_v2_0_Target_Enrichment_Probes"); \\
-                gsub(/Miami_Families-Agilent_WES_v3_capture_region/, "Miami_Families_Agilent_WES_v3_capture_region"); \\
-                gsub(/Miami_Families-Agilent_WES_v4_capture_region/, "Miami_Families_Agilent_WES_v4_capture_region"); \\
-                gsub(/Columbia_WHICAP-Roche_SeqCap_EZ_Exome_Probes_v3\.0_Target_Enrichment_Probes/, "Columbia_WHICAP_Roche_SeqCap_EZ_Exome_Probes_v3_0_Target_Enrichment_Probes"); \\
-                gsub(/KnightADRC-Nimblegen_VCRome_sequencing_w-Custom_Spike-In_Baits/, "KnightADRC_Nimblegen_VCRome_sequencing_w_Custom_Spike_In_Baits"); \\
-                gsub(/KnightADRC-IDT_xGen_Exome_Whole_Exome_Research_Panel_v1\.0_w-Custom_Spike-In_Baits/, "KnightADRC_IDT_xGen_Exome_Whole_Exome_Research_Panel_v1_0_w_Custom_Spike_In_Baits"); \\
-                gsub(/CBD-Agilent_WES_v5_capture_region/, "CBD_Agilent_WES_v5_capture_region"); \\
-                gsub(/PSP-Nimblegen_VCRome_V2\.1/, "PSP_Nimblegen_VCRome_V2_1"); \\
-                print }}' | """
-    else:
-        return ""
-
 ## Process vcf using config filters and params
-# rule process_chr_vcf_biallelic:
-#     input:
-#         rename = "input/rename-chrs.txt",
-#         vcf = lambda wc: getconf(wc, 'GENOTYPES')
-#     output: "output/{basename}/{basename}.chr{chr}.vcf.gz"
-#     threads: 4
-#     resources:
-#         walltime = "48:00",
-#         mem_mb = MEMORY_MB.get('extra-low')
-#     params:
-#         snpeff_genome = lambda wc: getconf(wc, 'SNPEFF_GENOME'),
-#         filter = lambda wc: getconf(wc, 'SNPSIFT_FILTER'),
-#         extra = process_chr_vcf_cohort_rule,
-#         wes_filter = process_chr_vcf_wes_filters
-#     conda: "envs/bcftools.yaml"
-#     shell:
-#         """
-#         bcftools view {input.vcf} -Ov | {params.wes_filter} \\
-#         java -Xmx32g -jar {SNPEFF_JAR} {params.snpeff_genome} -noStats | \\
-#         java -Xmx32g -jar {SNPSIFT_JAR} filter "{params.filter}" | \\
-#         bcftools annotate --rename-chrs {input.rename} --set-id '%CHROM:%POS:%REF:%ALT' -Ov | {params.extra} \\
-#         awk '$0 !~ "^##contig=<ID=(chr|HLA)|^##GATKCommandLine=|^##bcftools_" || $0 ~ "^##contig=<ID=chr{wildcards.chr},"' | \\
-#         bcftools view -Oz -o {output}
-#         """
-
-# ## Index vcf
-# rule index_vcf:
-#     input: "output/{basename}/{basename}.chr{chr}.vcf.gz"
-#     output: touch("output/{basename}/{basename}.chr{chr}.vcf.gz.tbi")
-#     resources:
-#         walltime = "4:00",
-#         mem_mb = 4000
-#     threads: 2
-#     container: "/sc/arion/projects/load/users/patelt16/resources/containers/04192023-github-ci_analysis.sif"
-#     shell:
-#         """
-#         bcftools index -t {input}
-#         """
+rule process_chr_vcf_biallelic:
+    input:
+        rename = "input/rename-chrs.txt",
+        vcf = lambda wc: getconf(wc, 'GENOTYPES')
+    output: "output/{basename}/{basename}.chr{chr}.vcf.gz"
+    threads: 4
+    resources:
+        walltime = "48:00",
+        mem_mb = MEMORY_MB.get('extra-low')
+    params:
+        snpeff_genome = lambda wc: getconf(wc, 'SNPEFF_GENOME'),
+        filter = lambda wc: getconf(wc, 'SNPSIFT_FILTER')
+    conda: "envs/bcftools.yaml"
+    shell:
+        """
+        bcftools view {input.vcf} -Ov | \\
+        java -Xmx32g -jar {SNPEFF_JAR} {params.snpeff_genome} -noStats | \\
+        java -Xmx32g -jar {SNPSIFT_JAR} filter "{params.filter}" | \\
+        bcftools annotate --rename-chrs {input.rename} --set-id '%CHROM:%POS:%REF:%ALT' -Ov | \\
+        awk '$0 !~ "^##contig=<ID=(chr|HLA)|^##GATKCommandLine=|^##bcftools_" || $0 ~ "^##contig=<ID=chr{wildcards.chr},"' | \\
+        bcftools view -Oz -o {output}
+        """
 
 ##################################
 ## MERGE BIALLELIC/MULTIALLELIC ##
@@ -270,33 +225,20 @@ rule concat_biallelic_and_multiallelic_chr_vcf:
 bcftools concat {input.biallelic_vcf} {input.decomposed_multiallelic_vcf} -Oz -o {output}
 """
 
-# rule index_vcf_merged:
-#     input: "output/{basename}/{basename}.biallelic_decomposed_multiallelic.chr{chr}.vcf.gz"
-#     output: "output/{basename}/{basename}.biallelic_decomposed_multiallelic.chr{chr}.vcf.gz.tbi"
-#     resources:
-#         walltime = "4:00",
-#         mem_mb = 4000
-#     threads: 2
-#     container: "/sc/arion/projects/load/users/patelt16/resources/containers/04192023-github-ci_analysis.sif"
-#     shell: """
-# bcftools index -t {input}
-# """
-
 ## Sort vcf after combining biallelic and decomposed multiallelic variants
 rule sort_concat_chr_vcf:
     input: "output/{basename}/{basename}.biallelic_decomposed_multiallelic.chr{chr}.vcf.gz"
     output: "output/{basename}/{basename}.biallelic_decomposed_multiallelic.sorted.chr{chr}.vcf.gz"
     params:
-        # temp_dir = lambda wc: f"/sc/arion/scratch/patelt16/temp/{CHROM}"
+        temp_dir = lambda wc: f"/sc/arion/scratch/patelt16/temp/{CHROM}"
     resources:
         walltime = "30:00",
         mem_mb = MEMORY_MB.get('extra-low')
     threads: 2
     container: "/sc/arion/projects/load/users/patelt16/resources/containers/04192023-github-ci_analysis.sif"
     shell: """
-bcftools sort {input} -Oz -o {output} --temp-dir /sc/arion/scratch/patelt16/temp/
+bcftools sort {input} -Oz -o {output} --temp-dir {params.temp_dir}
 """
-# bcftools sort {input} -Oz -o {output} --temp-dir {params.temp_dir}
 
 rule index_vcf_sorted:
     input: "output/{basename}/{basename}.biallelic_decomposed_multiallelic.sorted.chr{chr}.vcf.gz"
