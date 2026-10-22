@@ -1,13 +1,12 @@
 # ADSP R4 WGS Processing Pipeline
 
-This repository contains the code required to perform genome-wide association studies (GWAS) using Alzheimer's Disease Sequencing Project (ADSP) Release 4 WGS multiallelic data. The pipeline is organized into independent analysis modules covering genotype preprocessing and downstream association analyses. GCAD processed ADSP gVCF files were downloaded from the NIAGADS AWS.
+This repository contains the code required to perform genome-wide association studies (GWAS) using Alzheimer's Disease Sequencing Project (ADSP) Release 4 WGS multiallelic data. The pipeline is organized into independent analysis modules covering genotype preprocessing and downstream association analyses. GCAD processed ADSP gVCF and phenotype files were downloaded from the NIAGADS AWS.
 
 ### Repository structure
 Each analysis module is self-contained. Read the folder-specific README.md first to follow the documented execution order and required inputs.
 
 | Folder | Analysis | Key inputs	| Key outputs |
 |--------|----------|------------|-------------|
-| `phen/` | Phenotype processing	| ADSP phenotype files and documentation |	Analysis-ready phenotype and covariates files |
 | `vcf_to_gds_multi/` | ADSP genotype preprocessing and GCAD QC	| Raw ADSP genotype data, phenotype files, GCAD filtering recommendations |	Filtered genotype data, QC metrics, variant annotation files |
 | `qc_and_pca/` | ADSP genotype QC	| Filtered genotype data for all common variants |	Post-QC genotype data and PCs |
 
