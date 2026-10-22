@@ -68,4 +68,4 @@ rule filter_variants_by_annot:
         impact_filter = lambda wc: getconf(wc, 'IMPACT_FILTER'),
         snp_maf = lambda wc: getconf(wc, 'SNP_MAF'),
         snp_type = lambda wc: getconf(wc, 'SNP_TYPE')
-    script: "scripts/Snakefile.filter_variants_by_annot.R"
+    script: "scripts/Snakefile.filter_variants_by_annot_common_all.R"
