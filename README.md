@@ -7,8 +7,9 @@ Each analysis module is self-contained. Read the folder-specific README.md first
 
 | Folder | Analysis | Key inputs	| Key outputs |
 |--------|----------|------------|-------------|
-| `vcf_to_gds_multi/` | ADSP genotype preprocessing and GCAD QC	| Raw ADSP genotype data, phenotype files, GCAD filtering recommendations |	Filtered genotype data, QC metrics, variant annotation files |
-| `qc_and_pca/` | ADSP genotype QC	| Filtered genotype data for all common variants |	Post-QC genotype data and PCs |
+| `vcf_to_gds_multi/` | ADSP genotype preprocessing and GCAD QC	| Raw ADSP genotype data, phenotype files, GCAD filtering recommendations |	GCAD filtered genotype GDS, variant annotation files |
+| `common_variant_filtering/` | GCAD filtered genotype GDS	| GCAD filtered genotype GDS |	GCAD filtered genotype GDS for all common variants |
+| `qc_and_pca/` | ADSP genotype conversion, QC and PCA	| GCAD filtered genotype GDS for all common variants |	Post-QC genotype plink files and PCs |
 
 ### Prepare final dataset for downstream analysis
 Once the steps are complete, we remove ADNI samples and retain only AD cases for downstream analyses as shown below:
