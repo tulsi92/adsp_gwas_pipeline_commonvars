@@ -9,8 +9,8 @@ Each analysis module is self-contained. Read the folder-specific README.md first
 |--------|----------|------------|-------------|
 | `phen/` | Phenotype processing	| ADSP phenotype files and documentation |	Analysis-ready phenotype and covariates files |
 | `vcf_to_gds_multi/` | ADSP genotype preprocessing and GCAD QC	| Raw ADSP genotype data, phenotype files, GCAD filtering recommendations |	Filtered genotype data, QC metrics, variant annotation files |
-| `qc/` | ADSP genotype QC	| Filtered genotype data |	Post-QC genotype data |
-| `gwas/` |	Genome-wide association analysis	|	Processed genotype data and phenotype/covariate files | GWAS summary statistics and association results, Analysis report |
+| `qc_and_pca/` | ADSP genotype QC	| Filtered genotype data for all common variants |	Post-QC genotype data and PCs |
+| `slope_prs/` |	x	|	x | x |
 
 Each module contains:
 * A detailed `README.md`
