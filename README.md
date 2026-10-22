@@ -12,7 +12,7 @@ Each analysis module is self-contained. Read the folder-specific README.md first
 | `qc_and_pca/` | ADSP genotype conversion, QC and PCA	| GCAD filtered genotype GDS for all common variants |	Post-QC genotype plink files and PCs |
 
 ### Prepare final dataset for downstream analysis
-Once the steps are complete, we remove ADNI samples and retain only AD cases for downstream analyses as shown below:
+Once the above steps are complete, we remove ADNI samples and retain only AD cases for downstream analyses as shown below:
 
 ```
 module load plink
