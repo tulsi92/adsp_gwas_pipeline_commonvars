@@ -1,2 +1,0 @@
-BASENAME	GENOTYPES	SNPEFF_GENOME	PCA_MAF	SNPSIFT_FILTER
-adsp.r4.wgs	/sc/arion/projects/load/data-ext/ADSP/ADSP_Umbrella_ng00067.v10/geno/gcad.qc.compact_filtered.r4.wgs.36361.GATK.2023.06.06.biallelic.genotypes.chr{chr}.ALL.vcf.bgz	GRCh38.86	0.01	"((VFLAGS_One_subgroup = 0) & (ABHet_One_subgroup > 0.25) & (ABHet_One_subgroup < 0.75))"
