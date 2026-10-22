@@ -1,0 +1,152 @@
+
+import re
+
+import os
+
+configfile: "config/config.yaml"
+
+from datetime import datetime
+d = datetime.now()
+DATE = d.strftime('%Y%m%d')
+
+R_VERSION = config["R_VERSION"]
+
+BCFTOOLS_VERSION = config["BCFTOOLS_VERSION"]
+
+PLINK1_VERSION = config["PLINK1_VERSION"]
+
+KING_VERSION = config["KING_VERSION"]
+
+PLINK_GENOME_BUILD = config["PLINK_GENOME_BUILD"]
+
+GENOTYPE = config["GENOTYPE"]
+
+ADSP_SAMPLE_QC = config["ADSP_SAMPLE_QC"]
+
+ADSP_ANCESTRY = config["ADSP_ANCESTRY"]
+
+ADSP_PC = config["ADSP_PC"]
+
+ADSP_META = config["ADSP_META"]
+
+ADSP_VARIANT_QC = config["ADSP_VARIANT_QC"]
+
+ADSP_GDS = config["ADSP_GDS"]
+
+IMISS_MAX = config["IMISS_MAX"]
+
+HWE_P_THRESH = config["HWE_P_THRESH"]
+
+RSCRIPT_MAKE_SAMPLE_QC_ANCESTRY_PC_ADSP = config["RSCRIPT_MAKE_SAMPLE_QC_ANCESTRY_PC_ADSP"]
+
+RSCRIPT_MAKE_VCF_ADSP = config["RSCRIPT_MAKE_VCF_ADSP"]
+
+
+wildcard_constraints:
+    genotype = GENOTYPE,
+    date = DATE
+
+
+localrules:
+    main
+
+
+rule main:
+    input:
+        expand("output/{genotype}.{output}.{date}.tsv", genotype = GENOTYPE, output = ["sample_qc", "ancestry", "pc"], date = DATE),
+        expand("output/{genotype}.{date}.king_kinship.{ext}", genotype = GENOTYPE, date = DATE, ext = ["kin", "kin0"])
+
+
+rule r_make_sample_qc_ancestry_pc_adsp:
+    input:
+        adsp_sample_qc="data/" + ADSP_SAMPLE_QC,
+        adsp_ancestry="data/" + ADSP_ANCESTRY,
+        adsp_pc="data/" + ADSP_PC
+    output:
+        adsp_sample_qc="output/{genotype}.sample_qc.{date}.tsv",
+        adsp_ancestry="output/{genotype}.ancestry.{date}.tsv",
+        adsp_pc="output/{genotype}.pc.{date}.tsv"
+    resources:
+        mem_mb = 12000,
+        walltime = 120
+    shell:
+        """
+        module load R/{R_VERSION}
+
+        Rscript scripts/{RSCRIPT_MAKE_SAMPLE_QC_ANCESTRY_PC_ADSP} {input.adsp_sample_qc} {input.adsp_ancestry} {input.adsp_pc} \
+{output.adsp_sample_qc} {output.adsp_ancestry} {output.adsp_pc} {IMISS_MAX}
+        """
+
+
+rule r_make_vcf_adsp:
+    input:
+        adsp_meta="data/" + ADSP_META,
+        adsp_variant_qc="data/" + ADSP_VARIANT_QC,
+        adsp_gds="data/" + ADSP_GDS
+    output:
+        adsp_variant_qc="output/{genotype}.variant_qc.{date}.tsv",
+        adsp_vcf_gz="output/{genotype}.{date}.vcf.gz",
+        adsp_vcf_gz_tbi="output/{genotype}.{date}.vcf.gz.tbi"
+    resources:
+        mem_mb = 12000,
+        walltime = 720
+    shell:
+        """
+        module load R/{R_VERSION}
+
+        module load bcftools/{BCFTOOLS_VERSION}
+
+        Rscript scripts/{RSCRIPT_MAKE_VCF_ADSP} {input.adsp_meta} {input.adsp_variant_qc} {input.adsp_gds} \
+{output.adsp_variant_qc} {output.adsp_vcf_gz} {HWE_P_THRESH}
+
+        bcftools index --tbi {output.adsp_vcf_gz}
+        """
+
+
+rule r_make_plink_adsp:
+    input:
+        adsp_vcf_gz="output/{genotype}.{date}.vcf.gz",
+        adsp_vcf_gz_tbi="output/{genotype}.{date}.vcf.gz.tbi"
+    output:
+        adsp_plink=multiext("output/{genotype}.{date}", ".bed", ".bim", ".fam")
+    resources:
+        mem_mb = 24000,
+        walltime = 240
+    params:
+        base_adsp_plink="output/{genotype}.{date}"
+    log:
+        adsp_plink="output/{genotype}.{date}.log"
+    threads:
+        4
+    shell:
+        """
+        module load plink/{PLINK1_VERSION}
+
+        plink --vcf {input.adsp_vcf_gz} --split-x {PLINK_GENOME_BUILD} no-fail --double-id --vcf-half-call missing --keep-allele-order --make-bed --out {params.base_adsp_plink}
+        """
+
+
+rule r_make_king_adsp:
+    input:
+        adsp_plink=multiext("output/{genotype}.{date}", ".bed", ".bim", ".fam")
+    output:
+        adsp_king=multiext("output/{genotype}.{date}.king_kinship", ".kin", ".kin0")
+    resources:
+        mem_mb = 24000,
+        walltime = '72:00'
+    params:
+        base_adsp_plink="output/{genotype}.{date}",
+        base_adsp_king="output/{genotype}.{date}.king_kinship"
+    log:
+        adsp_king="output/{genotype}.{date}.king_kinship.log"
+    threads:
+        8
+    shell:
+        """
+        module load king/{KING_VERSION}
+
+        king -b {params.base_adsp_plink}.bed --kinship --prefix {params.base_adsp_king} > {log.adsp_king}
+
+        printf "FID\tID1\tID2\tN_SNP\tZ0\tPhi\tHetHet\tIBS0\tKinship\tError\n" > {params.base_adsp_king}.kin
+        """
+
