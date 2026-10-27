@@ -8,7 +8,7 @@ Each analysis module is self-contained. Read the README.md first to follow the d
 | Folder | Analysis | Key inputs	| Key outputs |
 |--------|----------|------------|-------------|
 | `vcf_to_gds_multi/` | ADSP genotype preprocessing and GCAD QC	| Raw ADSP genotype data, phenotype files, GCAD filtering recommendations |	GCAD filtered genotype GDS, variant annotation files |
-| `AR_qc_and_pca/` | ADSP genotype conversion, QC and PCA (AR)	| GCAD filtered genotype GDS |	Post-QC genotype plink files for filtered variants |
+| `AR_qc_and_pca/` | ADSP genotype conversion, QC, PCA, ancestry-aware QC (AR)	| GCAD filtered genotype GDS |	Post-QC genotype plink files for filtered variants |
 | `commonvars_qc_and_pca/` | ADSP genotype conversion, QC and PCA with GENESIS	| GCAD filtered genotype GDS |	Post-QC genotype plink files for all common variants |
 
 ### Prepare final dataset for downstream analysis
