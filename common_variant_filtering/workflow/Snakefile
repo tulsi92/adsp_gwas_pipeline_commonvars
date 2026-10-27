@@ -31,15 +31,12 @@ CHROMOSOMES = range(1, 23)
 wildcard_constraints:
     chr = "\d+"
 
-# snakemake --rulegraph | dot -Tpdf > dag.pdf
-# import ipdb; ipdb.set_trace()
-
 localrules: main
 
 rule main:
     input:
         expand(
-           "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.filtered.gds",
+           "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.qc_filtered.bim",
            zip,
            basename = config_tab.BASENAME.values.tolist(),
            strata = config_tab.STRATA.values.tolist(),
@@ -51,7 +48,6 @@ rule main:
 ## Filter variants by annotations ##
 ####################################
 ## Common variants: MAF>1%
-## Rare exonic variants: MAF<1% and protein coding
 rule filter_variants_by_annot:
     input:
         gds = lambda wc: getconf(wc, 'ADSP_GENO_GDS'),
@@ -68,4 +64,400 @@ rule filter_variants_by_annot:
         impact_filter = lambda wc: getconf(wc, 'IMPACT_FILTER'),
         snp_maf = lambda wc: getconf(wc, 'SNP_MAF'),
         snp_type = lambda wc: getconf(wc, 'SNP_TYPE')
-    script: "scripts/Snakefile.filter_variants_by_annot_common_all.R"
+    script: "scripts/Snakefile.filter_variants_by_annot.R"
+
+##################
+## QC for assoc ##
+##################
+rule chrall_qc_variant_missingness_1:
+    input:
+        gds = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.filtered.gds",
+        sample_pheno_tsv = lambda wc: getconf(wc, 'ADSP_PHEN_TSV')
+    output:
+        variant_missingness_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.variant_missingness_filter.tsv",
+        qc_report_pdf = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/report/{basename}_{strata}.chrall.qc_report_v1.pdf"
+    params:
+        snp_maf = lambda wc: getconf(wc, 'SNP_MAF'),
+        missing_rate = lambda wc: getconf(wc, 'MISSING_RATE'),
+        refp_super_pops = lambda wc: getconf(wc, 'REFP_SUPER_POPS')
+    resources:
+        walltime = "100:00",
+        mem_mb = 40000
+    threads: 8
+    container: "/sc/arion/projects/load/users/patelt16/resources/containers/04192023-github-ci_analysis.sif"
+    script: "scripts/Snakefile.qc_1_variant_missingness.R"
+
+rule chrall_qc_sample_missingness_2:
+    input:
+        gds = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.filtered.gds",
+        sample_pheno_tsv = lambda wc: getconf(wc, 'ADSP_PHEN_TSV'),
+        variant_missingness_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.variant_missingness_filter.tsv"
+    output:
+        sample_missingness_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.sample_missingness_filter.tsv",
+        qc_report_pdf = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/report/{basename}_{strata}.chrall.qc_report_s2.pdf"
+    params:
+        snp_maf = lambda wc: getconf(wc, 'SNP_MAF'),
+        missing_rate = lambda wc: getconf(wc, 'MISSING_RATE'),
+        refp_super_pops = lambda wc: getconf(wc, 'REFP_SUPER_POPS')
+    resources:
+        walltime = "100:00",
+        mem_mb = 40000
+    threads: 8
+    container: "/sc/arion/projects/load/users/patelt16/resources/containers/04192023-github-ci_analysis.sif"
+    script: "scripts/Snakefile.qc_2_sample_missingness.R"
+
+rule chrall_qc_sample_heterozygosity_3:
+    input:
+        gds = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.filtered.gds",
+        sample_pheno_tsv = lambda wc: getconf(wc, 'ADSP_PHEN_TSV'),
+        variant_missingness_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.variant_missingness_filter.tsv"
+    output:
+        sample_hethom_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.sample_hethom_filter.tsv",
+        qc_report_pdf = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/report/{basename}_{strata}.chrall.qc_report_s3.pdf"
+    params:
+        snp_maf = lambda wc: getconf(wc, 'SNP_MAF'),
+        missing_rate = lambda wc: getconf(wc, 'MISSING_RATE'),
+        refp_super_pops = lambda wc: getconf(wc, 'REFP_SUPER_POPS')
+    resources:
+        walltime = "100:00",
+        mem_mb = 40000
+    threads: 8
+    container: "/sc/arion/projects/load/users/patelt16/resources/containers/04192023-github-ci_analysis.sif"
+    script: "scripts/Snakefile.qc_3_sample_heterozygosity.R"
+
+rule chrall_qc_sample_titv_4:
+    input:
+        gds = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.filtered.gds",
+        sample_pheno_tsv = lambda wc: getconf(wc, 'ADSP_PHEN_TSV'),
+        variant_missingness_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.variant_missingness_filter.tsv"
+    output:
+        sample_titv_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.sample_titv_filter.tsv",
+        qc_report_pdf = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/report/{basename}_{strata}.chrall.qc_report_s4.pdf"
+    params:
+        snp_maf = lambda wc: getconf(wc, 'SNP_MAF'),
+        missing_rate = lambda wc: getconf(wc, 'MISSING_RATE'),
+        refp_super_pops = lambda wc: getconf(wc, 'REFP_SUPER_POPS')
+    resources:
+        walltime = "100:00",
+        mem_mb = 40000
+    threads: 8
+    container: "/sc/arion/projects/load/users/patelt16/resources/containers/04192023-github-ci_analysis.sif"
+    script: "scripts/Snakefile.qc_4_sample_titv.R"
+
+
+rule chrall_qc_sample_inbreeding_coeff_5:
+    input:
+        gds = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.filtered.gds",
+        sample_pheno_tsv = lambda wc: getconf(wc, 'ADSP_PHEN_TSV'),
+        variant_missingness_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.variant_missingness_filter.tsv"
+    output:
+        sample_inbreed_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.sample_inbreed_filter.tsv",
+        qc_report_pdf = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/report/{basename}_{strata}.chrall.qc_report_s5.pdf"
+    params:
+        snp_maf = lambda wc: getconf(wc, 'SNP_MAF'),
+        missing_rate = lambda wc: getconf(wc, 'MISSING_RATE'),
+        refp_super_pops = lambda wc: getconf(wc, 'REFP_SUPER_POPS')
+    resources:
+        walltime = "100:00",
+        mem_mb = 40000
+    threads: 8
+    container: "/sc/arion/projects/load/users/patelt16/resources/containers/04192023-github-ci_analysis.sif"
+    script: "scripts/Snakefile.qc_5_sample_inbreeding_coeff.R"
+
+rule chr_qc_variant_heterozygosity_6:
+    input:
+        gds = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.filtered.gds",
+        sample_pheno_tsv = lambda wc: getconf(wc, 'ADSP_PHEN_TSV'),
+        variant_missingness_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.variant_missingness_filter.tsv"
+    output:
+        variant_heterozygosity_tsv = temp("output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chr{chr}.variant_heterozygosity.tsv")
+    params:
+        snp_maf = lambda wc: getconf(wc, 'SNP_MAF'),
+        missing_rate = lambda wc: getconf(wc, 'MISSING_RATE'),
+        refp_super_pops = lambda wc: getconf(wc, 'REFP_SUPER_POPS')
+    threads: 8
+    resources:
+        walltime = "50:00",
+        mem_mb = 40000
+    container: "/sc/arion/projects/load/users/patelt16/resources/containers/04192023-github-ci_analysis.sif"
+    script: "scripts/Snakefile.qc_6_variant_heterozygosity.R"
+
+rule chr_qc_variant_hwe_7:
+    input:
+        gds = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.filtered.gds",
+        sample_pheno_tsv = lambda wc: getconf(wc, 'ADSP_PHEN_TSV'),
+        variant_missingness_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.variant_missingness_filter.tsv"
+    output:
+        variant_hwe_qq_tsv = temp("output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chr{chr}.variant_hwe_qq.tsv"),
+        variant_hwe_tsv = temp("output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chr{chr}.variant_hwe.tsv")"
+    params:
+        snp_maf = lambda wc: getconf(wc, 'SNP_MAF'),
+        missing_rate = lambda wc: getconf(wc, 'MISSING_RATE'),
+        refp_super_pops = lambda wc: getconf(wc, 'REFP_SUPER_POPS')
+    threads: 8
+    resources:
+        walltime = "50:00",
+        mem_mb = 40000
+    container: "/sc/arion/projects/load/users/patelt16/resources/containers/04192023-github-ci_analysis.sif"
+    script: "scripts/Snakefile.qc_7_variant_hwe.R"
+
+rule chr_qc_variant_differential_missingness_8:
+    input:
+        gds = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.filtered.gds",
+        sample_pheno_tsv = lambda wc: getconf(wc, 'ADSP_PHEN_TSV'),
+        variant_missingness_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.variant_missingness_filter.tsv"
+    output:
+        variant_diff_missingness_tsv = temp("output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chr{chr}.variant_differential_missingness.tsv")
+    params:
+        snp_maf = lambda wc: getconf(wc, 'SNP_MAF'),
+        missing_rate = lambda wc: getconf(wc, 'MISSING_RATE'),
+        refp_super_pops = lambda wc: getconf(wc, 'REFP_SUPER_POPS')
+    resources:
+        walltime = "50:00",
+        mem_mb = 40000
+    threads: 8
+    container: "/sc/arion/projects/load/users/patelt16/resources/containers/04192023-github-ci_analysis.sif"
+    script: "scripts/Snakefile.qc_8_variant_differential_missingness.R"
+
+rule merge_chr_variant_qc_metrics:
+    input:
+        variant_heterozygosity_tsv = expand("output/{{basename}}/{{strata}}/{{outcome}}/{{refp_super_pops}}/{{filter_name}}/{{basename}}_{{strata}}.chr{chr}.variant_heterozygosity.tsv", chr = CHROMOSOMES),
+        variant_hwe_tsv = expand("output/{{basename}}/{{strata}}/{{outcome}}/{{refp_super_pops}}/{{filter_name}}/{{basename}}_{{strata}}.chr{chr}.variant_hwe.tsv", chr = CHROMOSOMES),
+        variant_hwe_qq_tsv = expand("output/{{basename}}/{{strata}}/{{outcome}}/{{refp_super_pops}}/{{filter_name}}/{{basename}}_{{strata}}.chr{chr}.variant_hwe_qq.tsv", chr = CHROMOSOMES),
+        variant_diff_missingness_tsv = expand("output/{{basename}}/{{strata}}/{{outcome}}/{{refp_super_pops}}/{{filter_name}}/{{basename}}_{{strata}}.chr{chr}.variant_differential_missingness.tsv", chr = CHROMOSOMES)
+    output:
+        variant_heterozygosity_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.variant_heterozygosity.tsv",
+        variant_hwe_qq_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.variant_hwe_qq.tsv",
+        variant_hwe_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.variant_hwe.tsv",
+        variant_diff_missingness_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.variant_differential_missingness.tsv"
+    params:
+        snp_maf = lambda wc: getconf(wc, 'SNP_MAF'),
+        missing_rate = lambda wc: getconf(wc, 'MISSING_RATE'),
+        refp_super_pops = lambda wc: getconf(wc, 'REFP_SUPER_POPS')
+    resources:
+        walltime = "100:00",
+        mem_mb = 40000
+    threads: 8
+    container: "/sc/arion/projects/load/users/patelt16/resources/containers/04192023-github-ci_analysis.sif"
+    shell: 
+        """
+        mlr --csv --fs "\t" cat then sort -n variant.id {input.variant_heterozygosity_tsv} > {output.variant_heterozygosity_tsv}
+        mlr --csv --fs "\t" cat then sort -n variant.id {input.variant_hwe_tsv} > {output.variant_hwe_tsv}
+        mlr --csv --fs "\t" cat then sort -n variant.id {input.variant_hwe_qq_tsv} > {output.variant_hwe_qq_tsv}
+        mlr --csv --fs "\t" cat then sort -n variant.id {input.variant_diff_missingness_tsv} > {output.variant_diff_missingness_tsv}
+        """
+
+rule combine_sample_filtering_metrics:
+    input:
+        sample_pheno_tsv = lambda wc: getconf(wc, 'ADSP_PHEN_TSV'),
+        sample_missingness_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.sample_missingness_filter.tsv",
+        sample_hethom_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.sample_hethom_filter.tsv",
+        sample_titv_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.sample_titv_filter.tsv",
+        sample_inbreed_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.sample_inbreed_filter.tsv"
+    output:
+        sample_qc_summary_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/report/{basename}_{strata}.chrall.sample_qc_summary.tsv"
+    params:
+        snp_maf = lambda wc: getconf(wc, 'SNP_MAF'),
+        missing_rate = lambda wc: getconf(wc, 'MISSING_RATE'),
+        refp_super_pops = lambda wc: getconf(wc, 'REFP_SUPER_POPS')
+    resources:
+        walltime = "100:00",
+        mem_mb = 40000
+    threads: 8
+    container: "/sc/arion/projects/load/users/patelt16/resources/containers/04192023-github-ci_analysis.sif"
+    script: "scripts/Snakefile.qc_sample_summary.R"
+
+rule combine_variant_filtering_metrics:
+    input:
+        variant_heterozygosity_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.variant_heterozygosity.tsv",
+        variant_hwe_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.variant_hwe.tsv",
+        variant_hwe_qq_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.variant_hwe_qq.tsv",
+        variant_diff_missingness_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.variant_differential_missingness.tsv"
+    output:
+        qc_report_heterozygosity_pdf = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/report/{basename}_{strata}.chrall.qc_report_v6.pdf",
+        qc_report_hwe_pdf = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/report/{basename}_{strata}.chrall.qc_report_v7.pdf",
+        variant_qc_summary_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/report/{basename}_{strata}.chrall.variant_qc_summary.tsv"
+    params:
+        snp_maf = lambda wc: getconf(wc, 'SNP_MAF'),
+        missing_rate = lambda wc: getconf(wc, 'MISSING_RATE'),
+        refp_super_pops = lambda wc: getconf(wc, 'REFP_SUPER_POPS')
+    resources:
+        walltime = "100:00",
+        mem_mb = 40000
+    threads: 8
+    container: "/sc/arion/projects/load/users/patelt16/resources/containers/04192023-github-ci_analysis.sif"
+    script: "scripts/Snakefile.qc_variant_summary.R"
+
+################
+## QC for PCA ##
+################
+rule chrall_gds_qc_for_pca_adsp:
+    input:
+        gds = lambda wc: getconf(wc, 'ADSP_PCA_GDS'),
+        sample_pheno_tsv = lambda wc: getconf(wc, 'ADSP_PHEN_TSV')
+    output:
+        pca_snp = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall_pca.snp",
+        pca_smp = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall_pca.smp",
+        pca_qc_summary_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/report/{basename}_{strata}.chrall_pca.qc_summary.tsv"
+        # pca_qc_report_pdf = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/report/{basename}_{strata}.chrall_pca.qc_report.pdf"
+    resources:
+        walltime = "100:00",
+        mem_mb = 20000
+    threads: 8
+    container: "/sc/arion/projects/load/users/patelt16/resources/containers/04192023-github-ci_analysis.sif"
+    params:
+        pca_maf = lambda wc: getconf(wc, 'PCA_MAF'),
+        missing_rate = lambda wc: getconf(wc, 'MISSING_RATE'),
+        refp_super_pops = lambda wc: getconf(wc, 'REFP_SUPER_POPS')
+    script: "scripts/Snakefile.chrall_gds_qc_for_pca_refp.R"
+
+rule chrall_gds_qc_for_pca_refp:
+    input:
+        gds = lambda wc: getconf(wc, 'REFP_GENO_GDS'),
+        sample_pheno_tsv = lambda wc: getconf(wc, 'REFP_PHEN_TSV')
+    output:
+        pca_snp = "output/{basename}/{strata}/refp.gnomad.v3.1/{refp_super_pops}/refp.chrall_pca.snp",
+        pca_smp = "output/{basename}/{strata}/refp.gnomad.v3.1/{refp_super_pops}/refp.chrall_pca.smp",
+        pca_qc_summary_tsv = temp("output/{basename}/{strata}/refp.gnomad.v3.1/{refp_super_pops}/refp.chrall_pca.qc_summary.tsv")
+    resources:
+        walltime = "4:00",
+        mem_mb = 16000
+    threads: 4
+    container: "/sc/arion/projects/load/users/patelt16/resources/containers/04192023-github-ci_analysis.sif"
+    params:
+        pca_maf = lambda wc: getconf(wc, 'PCA_MAF'),
+        missing_rate = lambda wc: getconf(wc, 'MISSING_RATE'),
+        refp_super_pops = lambda wc: getconf(wc, 'REFP_SUPER_POPS')
+    script: "scripts/Snakefile.chrall_gds_qc_for_pca_refp.R"
+
+rule calc_pcs_and_grm:
+    input:
+        adsp_snp = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall_pca.snp",
+        adsp_smp = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall_pca.smp",
+        refp_snp = "output/{basename}/{strata}/refp.gnomad.v3.1/{refp_super_pops}/refp.chrall_pca.snp",
+        refp_smp = "output/{basename}/{strata}/refp.gnomad.v3.1/{refp_super_pops}/refp.chrall_pca.smp"
+    params: 
+        pcs = lambda wc: getconf(wc, 'PCS')
+    output:
+        sample_pheno_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.sample_pheno.tsv",
+        cov_mat_rds = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.cov_mat.rds",
+        king_obj_rds = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/pca/{basename}_{strata}.king_obj.rds",
+        pcair_obj_uncorrected_rds = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/pca/{basename}_{strata}.pcair_obj_uncorrected.rds",
+        pcrelate_obj_uncorrected_rds = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/pca/{basename}_{strata}.pcrelate_obj_uncorrected.rds",
+        pcair_obj_corrected_rds = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/pca/{basename}_{strata}.pcair_obj_corrected.rds",
+        pcrelate_obj_corrected_rds = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/pca/{basename}_{strata}.pcrelate_obj_corrected.rds"
+    resources:
+        walltime = "4:00",
+        mem_mb = 20000
+    threads: 14
+    container: "/sc/arion/projects/load/users/patelt16/resources/containers/04192023-github-ci_analysis.sif"
+    script: "scripts/Snakefile.calc_pcs_and_grm.R"
+
+rule filter_sample_pheno_and_merge_covars:
+    input: 
+        gds = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.filtered.gds",
+        sample_pheno_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.sample_pheno.tsv",
+        sample_qc_summary_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/report/{basename}_{strata}.chrall.sample_qc_summary.tsv",
+        wes_capture_kit_info_tsv = "/sc/arion/projects/load/data-ext/ADSP/ADSP_Umbrella_ng00067.v7/misc/gcad.r2.wes.20504.VCPA1.1.2019.11.01.v3.qcmetrics.seq.ALL.txt"
+    output: 
+        sample_pheno_filtered_merged_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.sample_pheno_merged_covars.tsv"
+    resources:
+        walltime = "1:00",
+        mem_mb = 8000
+    threads: 2
+    container: "/sc/arion/projects/load/users/patelt16/resources/containers/04192023-github-ci_analysis.sif"
+    script: "scripts/Snakefile.filter_and_merge_covars.R"
+
+rule create_chr_vcf:
+    input:
+        gds = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.filtered.gds",
+        sample_pheno_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.sample_pheno_merged_covars.tsv"
+    output:
+        chr_vcf = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chr{chr}.vcf.gz"
+    resources:
+        walltime = "4:00",
+        mem_mb = 10000
+    threads: 4
+    container: "/sc/arion/projects/load/users/patelt16/resources/containers/04192023-github-ci_analysis.sif"
+    script: "scripts/Snakefile.create_chr_vcf.R"
+
+# RUTH rules not run for all_common_variant ADSP GWAS plink output
+# rule flag_variants_ruth:
+#     input:
+#         variant_qc_metrics_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/report/{basename}_{strata}.chrall.variant_qc_summary.tsv",
+#         ruth_hwe_metrics_all_samples = "/sc/arion/projects/load/users/patelt16/projects/adsp/ruth/{basename}.noref.chrall.ruth.tsv",
+#         sample_pheno_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.sample_pheno_merged_covars.tsv"
+#     output:
+#         variant_flags_tsv = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/variant_assoc/{basename}_{strata}.chr{chr}.variant_qc_flags_filterlist.tsv"
+#     params:
+#         snp_maf = lambda wc: getconf(wc, 'SNP_MAF'),
+#         missing_rate = lambda wc: getconf(wc, 'MISSING_RATE'),
+#         refp_super_pops = lambda wc: getconf(wc, 'REFP_SUPER_POPS'),
+#         qc_thres_diff_miss_p = lambda wc: getconf(wc, 'QC_THRES_DIFF_MISS_P'),
+#         qc_thres_ruth_slp = lambda wc: getconf(wc, 'QC_THRES_RUTH_SLP'),
+#         qc_thres_variant_het = lambda wc: getconf(wc, 'QC_THRES_VARIANT_HET')
+#     resources:
+#         walltime = "1:00",
+#         mem_mb = 40000
+#     threads: 6
+#     container: "/sc/arion/projects/load/users/patelt16/resources/containers/04192023-github-ci_analysis.sif"
+#     script: "scripts/Snakefile.variant_metrics_flags_ruth.R"
+
+rule merge_chr_variant_filterlist:
+    input:
+        chr_variant_flags = expand("output/{{basename}}/{{strata}}/{{outcome}}/{{refp_super_pops}}/{{filter_name}}/variant_assoc/{{basename}}_{{strata}}.chr{chr}.variant_qc_flags_filterlist.tsv", chr=CHROMOSOMES)
+    output:
+        chrall_variant_flags = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/report/{basename}_{strata}.chrall.variant_qc_flags_filterlist.tsv"
+    resources:
+        walltime = "1:00",
+        mem_mb = 8000
+    threads: 4
+    container: "/sc/arion/projects/load/users/patelt16/resources/containers/04192023-github-ci_analysis.sif"
+    shell:
+        """
+        mlr --csv --fs "\t" cat then sort -n variant.id {input.chr_variant_flags} > {output.chrall_variant_flags}
+        """
+
+######################################
+## Merge chr VCFs to GDS and filter ##
+######################################
+rule merge_vcf_to_gds:
+    input:
+        chr_vcf = expand("output/{{basename}}/{{strata}}/{{outcome}}/{{refp_super_pops}}/{{filter_name}}/{{basename}}_{{strata}}.chr{chr}.vcf.gz", chr=CHROMOSOMES)
+    output:
+        merged_gds = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.gds"
+    resources:
+        walltime = "4:00",
+        mem_mb = 10000
+    threads: 8
+    container: "/sc/arion/projects/load/users/patelt16/resources/containers/04192023-github-ci_analysis.sif"
+    script: "scripts/Snakefile.merge_vcf_to_gds.R"
+
+rule filter_gds_by_qc_flags:
+    input:
+        gds = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.gds",
+        variant_filterlist = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/report/{basename}_{strata}.chrall.variant_qc_flags_filterlist.tsv"
+    output:
+        filtered_gds = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.qc_filtered.gds"
+    resources:
+        walltime = "4:00",
+        mem_mb = 10000
+    threads: 8
+    container: "/sc/arion/projects/load/users/patelt16/resources/containers/04192023-github-ci_analysis.sif"
+    script: "scripts/Snakefile.filter_gds_by_qc_flags.R"
+
+rule gds_to_plink:
+    input:
+        gds = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.qc_filtered.gds"
+    output:
+        bed = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.qc_filtered.bed",
+        bim = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.qc_filtered.bim",
+        fam = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.qc_filtered.fam"
+    params:
+        plink_prefix = "output/{basename}/{strata}/{outcome}/{refp_super_pops}/{filter_name}/{basename}_{strata}.chrall.qc_filtered"
+    resources:
+        walltime = "4:00",
+        mem_mb = 8000
+    threads: 8
+    container: "/sc/arion/projects/load/users/patelt16/resources/containers/04192023-github-ci_analysis.sif"
+    script: "scripts/Snakefile.gds_to_plink.R"
