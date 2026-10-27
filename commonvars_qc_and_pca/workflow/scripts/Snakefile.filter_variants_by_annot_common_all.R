@@ -7,21 +7,13 @@ library(SNPRelate)
 library(annotatr)
 library(GenomicRanges)
 
-gds_fn <- "/sc/arion/projects/load/users/patelt16/projects/adsp/adsp_gwas/20240118.adsp_pipeline_v8_master_pipeline/multiallelic_gwas/vcf_to_gds_multi/output/adsp.r4.wgs/adsp.r4.wgs.biallelic_decomposed_multiallelic.chrall.gds"
-variant_annot_tsv <- "/sc/arion/projects/load/users/patelt16/projects/adsp/adsp_gwas/20240118.adsp_pipeline_v8_master_pipeline/multiallelic_gwas/vcf_to_gds_multi/output/adsp.r4.wgs/adsp.r4.wgs.biallelic_decomposed_multiallelic.gnomad.v4.0_annot.chrall.variant_annot.tsv"
-gds_filtered <- "/sc/arion/projects/load/users/patelt16/projects/adsp/adsp_gwas/20240118.adsp_pipeline_v8_master_pipeline/multiallelic_gwas/all_gwas_variants/output/adsp.r4.wgs/cc.all/diagnosis_code/all/common_all/adsp.r4.wgs_cc.all.chrall.filtered.gds"
-snp_filter <- NULL
-impact_filter <- NULL
-snp_maf <- 0.01
-snp_type <- "common"
-
-# gds_fn <- snakemake@input$gds
-# variant_annot_tsv <- snakemake@input$variant_annot
-# gds_filtered <- snakemake@output$gds
-# snp_filter <- snakemake@params$snp_filter
-# impact_filter <- snakemake@params$impact_filter
-# snp_maf <- snakemake@params$snp_maf
-# snp_type <- snakemake@params$snp_type
+gds_fn <- snakemake@input$gds
+variant_annot_tsv <- snakemake@input$variant_annot
+gds_filtered <- snakemake@output$gds
+snp_filter <- snakemake@params$snp_filter
+impact_filter <- snakemake@params$impact_filter
+snp_maf <- snakemake@params$snp_maf
+snp_type <- snakemake@params$snp_type
 
 gds <- seqOpen(gds_fn)
 
@@ -87,15 +79,6 @@ variant_annot_filter <- variant_annot_af |>
 nrow(variant_annot_filter)
 
 seqSetFilter(gds, variant.id = unique(variant_annot_filter))
-
-## Filter for exonic variants
-# txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
-
-# txs <- exonsBy(txdb, "gene")
-
-# seqlevels(txs) <- gsub("chr", "", seqlevels(txs))
-
-# seqSetFilter(gds, txs)
 
 message("Saving filtered GDS file")
 
