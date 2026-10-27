@@ -3,13 +3,13 @@
 This repository contains the code required to perform genome-wide association studies (GWAS) using Alzheimer's Disease Sequencing Project (ADSP) Release 4 WGS multiallelic data. The pipeline is organized into independent analysis modules covering genotype preprocessing and downstream association analyses. GCAD processed ADSP gVCF and phenotype files were downloaded from the NIAGADS AWS.
 
 ### Repository structure
-Each analysis module is self-contained. Read the folder-specific README.md first to follow the documented execution order and required inputs.
+Each analysis module is self-contained. Read the README.md first to follow the documented execution order and required inputs.
 
 | Folder | Analysis | Key inputs	| Key outputs |
 |--------|----------|------------|-------------|
 | `vcf_to_gds_multi/` | ADSP genotype preprocessing and GCAD QC	| Raw ADSP genotype data, phenotype files, GCAD filtering recommendations |	GCAD filtered genotype GDS, variant annotation files |
-| `common_variant_filtering/` | GCAD filtered genotype GDS	| GCAD filtered genotype GDS |	GCAD filtered genotype GDS for all common variants |
-| `qc_and_pca/` | ADSP genotype conversion, QC and PCA	| GCAD filtered genotype GDS for all common variants |	Post-QC genotype plink files and PCs |
+| `AR_qc_and_pca/` | ADSP genotype conversion, QC and PCA (AR)	| GCAD filtered genotype GDS |	Post-QC genotype plink files for filtered variants |
+| `commonvars_qc_and_pca/` | ADSP genotype conversion, QC and PCA with GENESIS	| GCAD filtered genotype GDS |	Post-QC genotype plink files for all common variants |
 
 ### Prepare final dataset for downstream analysis
 Once the above steps are complete, we remove ADNI samples and retain only AD cases for downstream analyses as shown below:
